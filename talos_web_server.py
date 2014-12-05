@@ -13,14 +13,24 @@ with open('config/config.ini','r') as cfgfile:
     redis_port = int(config.get('redis-config','port')) 
     redis_password = config.get('redis-config','password')
     redis_db = int(config.get('redis-config','db'))
+    port     = int(config.get('web-config','port'))
 
 r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db , password=redis_password)
 
-class EchoWebSocket(tornado.websocket.WebSocketHandler):
+
+
+class LogEchoWebSocket(tornado.websocket.WebSocketHandler):
     def open(self):
         print "WebSocket opened"
         logstash_key = self.get_argument('logstash_key')
         self.fp = open('logs/%s.log'%(logstash_key),'rw+')
+        # 如果文件大于1mb，则从文件末尾1mb处开始读取
+        self.fp.seek(0,os.SEEK_END)
+        pos_last =  self.fp.tell()
+        if pos_last>1048576:
+            self.fp.seek(-1048576,os.SEEK_END)
+        else:
+            self.fp.seek(0)
 
     def on_message(self, message):
         if message=='get_data':
@@ -37,7 +47,7 @@ class EchoWebSocket(tornado.websocket.WebSocketHandler):
     def on_close(self):
         print "WebSocket closed"
 
-class KafkaJmx(tornado.websocket.WebSocketHandler):
+class KafkaJmxWebsocket(tornado.websocket.WebSocketHandler):
     def open(self):
         print "WebSocket opened"
         self.key = self.get_argument('key')
@@ -62,6 +72,7 @@ class MainHandler(tornado.web.RequestHandler):
         for x in os.listdir('logs'):
             key_list.append( os.path.splitext(x)[0] )
         logstash_key = key_list[0]
+        key_list.sort()
         self.render('web/tpl/index.html',logstash_key=logstash_key,key_list=key_list)
 
     def post(self):
@@ -72,9 +83,11 @@ class LogShowHandler(tornado.web.RequestHandler):
         # self.write("Hello, world")
         # self.write(self.get_argument('logstash_key'))
         # self.write(logstash_key)
+        
         key_list = []
         for x in os.listdir('logs'):
             key_list.append( os.path.splitext(x)[0] )
+        key_list.sort()
         self.render('web/tpl/index.html',logstash_key=logstash_key,key_list=key_list)
 
 class KafkaHandler(tornado.web.RequestHandler):
@@ -83,6 +96,7 @@ class KafkaHandler(tornado.web.RequestHandler):
         for x in r.keys('talos_kafka_agent:*'):
             key_list.append( x[18:] )
         key = self.get_argument('key','')
+        key_list.sort()
         self.render('web/tpl/kafka.html',key=key,key_list=key_list)
 
 
@@ -91,11 +105,11 @@ application = tornado.web.Application([
     (r"/", MainHandler),
     (r"/logshow/(.*)", LogShowHandler),
     (r"/kafka", KafkaHandler),
-    (r"/ws", EchoWebSocket),
-    (r"/jmx", KafkaJmx),
+    (r"/ws", LogEchoWebSocket),
+    (r"/jmx", KafkaJmxWebsocket),
 ])
 
 if __name__ == "__main__":
     print 'server start'
-    application.listen(8888)
+    application.listen(port)
     tornado.ioloop.IOLoop.instance().start()

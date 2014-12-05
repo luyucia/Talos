@@ -75,10 +75,10 @@
     <script src="/web/js/highcharts.js"></script>
     <script >
 
-
+    var host = window.location.host
     var now_value = 0
     var tag_name = 'OneMinuteRate'
-    var ws = new WebSocket("ws://10.234.10.17:8888/jmx?key={{ key }}");
+    var ws = new WebSocket("ws://"+host+"/jmx?key={{ key }}");
     ws.onopen = function() {
        ws.send("get_data");
     };

@@ -5,6 +5,7 @@ import json
 import sys
 # sys.path.append("lib")
 import sys
+import time
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -12,7 +13,10 @@ sys.path.append("handlers")
 import kafka_handler
 import plain_handler
 
-config = ConfigParser.ConfigParser()  
+# key为logstash中key value为处理类型
+handler_map = {}
+
+config = ConfigParser.ConfigParser()
 with open('config/config.ini','r') as cfgfile:  
     config.readfp(cfgfile)
     redis_host = config.get('redis-config','host')
@@ -20,13 +24,10 @@ with open('config/config.ini','r') as cfgfile:
     redis_password = config.get('redis-config','password')
     redis_db = int(config.get('redis-config','db'))
 
-r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db , password=redis_password)
+    for o in config.options('channels'):
+        handler_map[o] = config.get('channels',o)
 
-# key为logstash中key value为处理类型
-handler_map = {
-    'kafka-log':'log',
-    'kafka-consumer':'log',
-}
+r = redis.StrictRedis(host=redis_host, port=redis_port, db=redis_db , password=redis_password)
 
 subscribe_list = []
 log_fp_dic     = {}

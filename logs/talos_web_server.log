@@ -1,0 +1,36 @@
+WARNING:tornado.access:404 GET /favicon.ico (61.148.17.34) 0.93ms
+ERROR:tornado.application:Uncaught exception in /ws
+Traceback (most recent call last):
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/websocket.py", line 369, in _run_callback
+    callback(*args, **kwargs)
+  File "talos_web_server.py", line 23, in open
+    self.fp = open('logs/%s.log'%(logstash_key),'rw+')
+IOError: [Errno 2] No such file or directory: u'logs/sdk.log'
+ERROR:tornado.application:Uncaught exception GET /kafka?key=talos_kafka_agent:kafka_232:Produce-ResponseSendTimeMs (61.148.17.34)
+HTTPServerRequest(protocol='http', host='114.112.65.228:8888', method='GET', uri='/kafka?key=talos_kafka_agent:kafka_232:Produce-ResponseSendTimeMs', version='HTTP/1.1', remote_ip='61.148.17.34', headers={'Accept-Language': 'zh-CN,zh;q=0.8', 'Accept-Encoding': 'gzip, deflate, sdch', 'Host': '114.112.65.228:8888', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.65 Safari/537.36', 'Connection': 'keep-alive', 'Referer': 'http://114.112.65.228:8888/kafka?key=talos_kafka_agent:kafka_233:AllTopicsMessagesInPerSec', 'Cache-Control': 'max-age=0', 'If-None-Match': '"4e300a7343b55a15f425f0765001336bb1ee1910"'})
+Traceback (most recent call last):
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/web.py", line 1332, in _execute
+    result = method(*self.path_args, **self.path_kwargs)
+  File "talos_web_server.py", line 86, in get
+    self.render('web/tpl/kafka.html',key=key,key_list=key_list.sort())
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/web.py", line 665, in render
+    html = self.render_string(template_name, **kwargs)
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/web.py", line 772, in render_string
+    return t.generate(**namespace)
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/template.py", line 278, in generate
+    return execute()
+  File "web/tpl/kafka_html.generated.py", line 5, in _tt_execute
+    for k in key_list:  # web/tpl/kafka.html:50
+TypeError: 'NoneType' object is not iterable
+ERROR:tornado.access:500 GET /kafka?key=talos_kafka_agent:kafka_232:Produce-ResponseSendTimeMs (61.148.17.34) 18.22ms
+ERROR:tornado.application:Uncaught exception in /jmx
+Traceback (most recent call last):
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/websocket.py", line 369, in _run_callback
+    callback(*args, **kwargs)
+  File "talos_web_server.py", line 49, in on_message
+    self.write_message(r.get(self.key))
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/websocket.py", line 201, in write_message
+    self.ws_connection.write_message(message, binary=binary)
+  File "/usr/local/lib/python2.7/site-packages/tornado-4.0.2-py2.7-linux-x86_64.egg/tornado/websocket.py", line 489, in write_message
+    assert isinstance(message, bytes_type)
+AssertionError

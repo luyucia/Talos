@@ -73,7 +73,9 @@
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="/web/js/bootstrap.min.js"></script>
     <script >
-    var ws = new WebSocket("ws://10.234.10.17:8888/ws?logstash_key={{ logstash_key }}");
+    var host = window.location.host
+    var ws = new WebSocket("ws://"+host+"/ws?logstash_key={{ logstash_key }}");
+    var connected = true
 ws.onopen = function() {
    ws.send("get_data");
 };
@@ -82,10 +84,16 @@ ws.onmessage = function (evt) {
    $('#log').append(evt.data)
 };
 ws.onerror = function(d){
-    alert(d)
+    console.log(d.data)
+    connected = false
+}
+ws.onclose = function(){
+  connected = false
 }
 function flush(){
+  if (connected) {
     ws.send("get_data");
+  }
 }
 function clean_log(){
     ws.send("clean_log");
