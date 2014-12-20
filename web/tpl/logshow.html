@@ -52,11 +52,6 @@
           {% end %}
           </ul>
           <ul class="nav nav-sidebar">
-          {% for k in dashbord_list %}
-            <li {% if k==action %}class="active"{% end %}><a href="/dashbord/{{ k }}">{{ dashbord_list[k] }}</a></li>
-          {% end %}
-          </ul>
-          <ul class="nav nav-sidebar">
             <li><a href="/kafka">kafka</a></li>
             <li><a href="/dashbord">仪表盘</a></li>
           </ul>

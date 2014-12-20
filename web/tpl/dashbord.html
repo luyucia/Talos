@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>监控</title>
+
+    <!-- Bootstrap -->
+    <link href="/web/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/web/css/style.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+
+  <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Talos 日志监控系统</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#">Settings</a></li>
+            <li><a href="#">Profile</a></li>
+            <li><a href="#">Help</a></li>
+          </ul>
+          <form class="navbar-form navbar-right">
+            <input type="text" class="form-control" placeholder="搜索...">
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+          {% for k in dashbord_list %}
+            <li {% if k==action %}class="active"{% end %}><a href="/dashbord/{{ k }}">{{ dashbord_list[k] }}</a></li>
+          {% end %}
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href="/kafka">kafka</a></li>
+            <li><a href="/dashbord">仪表盘</a></li>
+          </ul>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <h1 class="page-header">{{ action }}</h1>
+          <div class="panel panel-default">
+            <div class="panel-body">
+              <form id="dashbord_add_form">
+                name<input name="name">
+                key<input name="key">
+                type<select name="type">
+                  <option value="plain">原样输出</option>
+                  <option value="speed">速度计</option>
+                  <option value="table">表格(要求数据格式为json数组)</option>
+                  </select>
+                desc<input name="desc">
+              </form>
+              <button onclick="add()">添加</button>
+            </div>
+          </div>
+          {% for k in dashbord_collection %}
+            <div class="col-sm-4" id="{{k}}">
+              <h1>{{dashbord_collection[k]['name']}}</h1>
+              <h5>{{dashbord_collection[k]['desc']}}</h5>
+              <pre></pre>
+              <div class="showtable"></div>
+            </div>
+          {% end %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="/web/js/jquery-1.11.1.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/web/js/bootstrap.min.js"></script>
+    <script >
+    function listen(key,type){
+      var host = window.location.host
+      var connected = true
+      var ws = new WebSocket("ws://"+host+"/redis?key="+key);
+      this.id="obj_"+key;
+      eval(this.id+"=this");
+      ws.onopen = function() {
+       ws.send("get_data");
+      };
+      ws.onmessage = function (evt) {
+         // document.getElementById('log').innerHtml = evt.data
+       // $('#log').append(evt.data)
+       // console.log(evt.data)
+       if (type=='plain') {
+        $("#"+key+" pre").empty().append(evt.data)
+       }else if(type=='table'){
+        d = jQuery.parseJSON(evt.data);
+        $("#"+key+" .showtable").empty().append(draw_table(d))
+       }
+      };
+      ws.onerror = function(d){
+          console.log(d.data)
+          connected = false
+      }
+      ws.onclose = function(){
+        connected = false
+      }
+
+      this.flush = function()
+      {
+          if (connected) {
+            ws.send("get_data");
+          }
+        }
+
+      // setInterval(key+".flush()",2000)
+
+    }
+    {% for k in dashbord_collection %}
+       var {{dashbord_collection[k]['key']}} = new listen("{{dashbord_collection[k]['key']}}","{{dashbord_collection[k]['type']}},")
+       setInterval("{{dashbord_collection[k]['key']}}.flush()",2000)
+    {% end %}
+//     var host = window.location.host
+//     var ws = new WebSocket("ws://"+host+"/ws?key={{ action }}");
+//     var connected = true
+// ws.onopen = function() {
+//    ws.send("get_data");
+// };
+// ws.onmessage = function (evt) {
+//    // document.getElementById('log').innerHtml = evt.data
+//    $('#log').append(evt.data)
+// };
+// ws.onerror = function(d){
+//     console.log(d.data)
+//     connected = false
+// }
+// ws.onclose = function(){
+//   connected = false
+// }
+// function flush(){
+//   if (connected) {
+//     ws.send("get_data");
+//   }
+// }
+// function clean_log(){
+//     ws.send("clean_log");
+//     $('#log').empty()
+// }
+// setInterval("flush()",1000)
+
+function draw_table(d){
+  table = "<table>"
+  th = "<thead><tr>"
+  write_head = true
+  for (var r in d) {
+    row = "<tr>"
+    for(var k in d[r]){
+      if (write_head) {
+        th+="<th>"+k+"</th>"
+      }
+      row+="<td>"+d[r][k]+"</td>"
+    }
+    if (write_head) {
+      th+="</tr></thead>"
+      write_head = false
+      table+=th
+    }
+    row+="</tr>"
+    table+=row
+  };
+  return table
+  // for (var i = d.length - 1; i >= 0; i--) {
+  //     row = "<tr><td>"+d[i].ip+"</td>"+
+  //     "<td>"+d[i].port+"</td>"+
+  //     "<td>"+d[i].pid+"</td>"+
+  //     "<td>"+d[i].pname+"</td></tr>"
+  //     table+=row
+  // };
+  // table+="</table>"
+  // return table
+}
+
+
+function add(){
+  
+  $.post('/dashbord/{{ key }}', $('#dashbord_add_form').serialize() , function(data, textStatus, xhr) {
+    console.log(data)
+  });
+}
+</script>
+  </body>
+</html>
