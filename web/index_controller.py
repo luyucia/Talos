@@ -85,3 +85,14 @@ class DashbordHandler(tornado.web.RequestHandler):
         # 这里key可以加hash
         rtn  =  r.hset('talos.dashbord.%s'%(key),json_data['key'],json.dumps(json_data))
         self.write('{"code":0}')
+
+class DashbordListHandler(tornado.web.RequestHandler):
+    def get(self,action):
+        pass
+    # 填加一个面板
+    def post(self):
+        dashbord_name= self.get_argument('dashbord_name')
+
+        # 这里key可以加hash
+        rtn  =  r.hset('talos.dashbord.list',dashbord_name,dashbord_name)
+        self.write('{"code":0}')

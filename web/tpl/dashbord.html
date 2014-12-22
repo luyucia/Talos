@@ -54,6 +54,8 @@
           <ul class="nav nav-sidebar">
             <li><a href="/kafka">kafka</a></li>
             <li><a href="/dashbord">仪表盘</a></li>
+            <li><a href="###" onclick="add_list()">添加</a></li>
+            <li><input name="dashbord_name"/></li>
           </ul>
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
@@ -70,10 +72,6 @@
                 <div class="form-group">
                   <lable>key</lable>
                   <input name="key" class="form-control"/>
-                </div>
-                <div class="form-group">
-                  <lable>type</lable>
-                  <input name="type" class="form-control"/>
                 </div>
                 <div class="form-group">
                   <lable>type</lable>
@@ -422,6 +420,13 @@ function draw_table(d){
 function add(){
   
   $.post('/dashbord/{{ key }}', $('#dashbord_add_form').serialize() , function(data, textStatus, xhr) {
+    console.log(data)
+  });
+}
+
+function add_list(){
+  var dashbord_name =  $(':input[name="dashbord_name"]').val()
+  $.post('/dashbordList', {"dashbord_name":dashbord_name} , function(data, textStatus, xhr) {
     console.log(data)
   });
 }

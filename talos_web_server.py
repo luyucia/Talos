@@ -24,6 +24,7 @@ application = tornado.web.Application([
     (r"/logshow/(.*)", index_controller.LogShowHandler),
     (r"/kafka", index_controller.KafkaHandler),
     (r"/dashbord/(.*)", index_controller.DashbordHandler),
+    (r"/dashbordList", index_controller.DashbordListHandler),
     (r"/ws", websocket_controller.LogEchoWebSocket),
     (r"/jmx", websocket_controller.KafkaJmxWebsocket),
     (r"/redis", websocket_controller.RedisWebsocket),
