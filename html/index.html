@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+    <head>
+        <title>logger</title>
+        <meta charset="UTF-8" />
+        <link rel="stylesheet" type="text/css" href="//static.510wifi.com/common/css/normalize.min.css" />
+        <link rel="stylesheet" type="text/css" href="//static.510wifi.com/common/bootstrap-3.3.5-dist/css/bootstrap.min.css" />
+        <link rel="stylesheet" type="text/css" href="//static.510wifi.com/common/css/bootstrap-datetimepicker.min.css" />
+        <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" />
+        <link rel="stylesheet" type="text/css" href="./common/css/base.css" />
+    </head>
+    <body>
+        <div id="wrap">
+            <div id="header">
+                <div class="nav">
+                    <h1>Logger</h1>
+                    <ul>
+                        <li>MENU1</li>
+                        <li>MENU2</li>
+                        <li>MENU3</li>
+                    </ul>
+                </div>
+            </div>
+            <div id="content">
+                <div class="left-menu" id="menu">
+                </div>
+                <div class="right-wrap">
+                    <div class="search-area">
+                        <input type="text" value="XXX" /> <button>search</button>
+                        <label><input type="checkbox" name="autoScroll" checked >自动滚动</label>
+                    </div>
+                    <div class="log-info" id="showbox">
+
+                    </div>
+                </div>
+            </div>
+            <!-- <div id="footer">
+
+            </div> -->
+        </div>
+    </body>
+<script type="text/javascript" src="/static/js/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/static/js/template.js"></script>
+
+<script id="log_list" type="text/html">
+<ul>
+    {{each data as value i}}
+        <li f="{{value}}" >{{value}}</li>
+    {{/each}}
+</ul>
+</script>
+<script type="text/javascript">
+    $(".log-info").height($(".log-info").height()-140)
+
+
+    var intervalId;
+    var scrollWindow = $('html .log-info,body .log-info');
+    var ws = new WebSocket("ws://101.200.200.207:9008/logws");
+
+    function autoScroll(){
+      // 自动滚动
+        if($('input[name="autoScroll"]').prop('checked') && !$(scrollWindow).is(':animated')){
+          $(scrollWindow).animate({
+                scrollTop:$(".log-info")[0].scrollHeight
+            },800);
+        }
+    }
+
+    $.get('logs/log_list',{},function(d){
+      var html = template('log_list', d);
+      $('#menu').html(html)
+    },'json')
+
+    $('#menu').on('click','li',function(){
+      f = $(this).attr('f')
+      $.get('logs/log_init?f='+f,{},function(d){
+        $('#showbox').empty()
+        for (var i = 0; i < d.data.length; i++) {
+          $('#showbox').append(d.data[i]+"</br>")
+        }
+        autoScroll()
+        ws.onopen = function() {
+           ws.send(f);
+
+        };
+        ws.onmessage = function (evt) {
+          dat = jQuery.parseJSON(evt.data)
+          if (dat.data.length>0) {
+            for (var i = 0; i < dat.data.length; i++) {
+             $('#showbox').append(dat.data[i]+"</br>")
+            }
+            autoScroll()
+          }
+        };
+        clearInterval(intervalId);
+        intervalId = setInterval(ws.onopen,1000)
+
+      },'json')
+    })
+
+
+
+    $('#menu').on('click','li',function(){
+      $('#menu li').removeClass('cur');
+      $(this).addClass('cur');
+    })
+</script>
+</html>

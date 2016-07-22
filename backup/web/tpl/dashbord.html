@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>监控</title>
+
+    <!-- Bootstrap -->
+    <link href="/web/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/web/css/style.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+
+  <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Talos 日志监控系统</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#">Settings</a></li>
+            <li><a href="#">Profile</a></li>
+            <li><a href="#">Help</a></li>
+          </ul>
+          <form class="navbar-form navbar-right">
+            <input type="text" class="form-control" placeholder="搜索...">
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+          {% for k in dashbord_list %}
+            <li {% if k==action %}class="active"{% end %}><a href="/dashbord/{{ k }}">{{ dashbord_list[k] }}</a></li>
+          {% end %}
+          </ul>
+          <ul class="nav nav-sidebar">
+            <li><a href="/kafka">kafka</a></li>
+            <li><a href="/dashbord">仪表盘</a></li>
+            <li><a href="###" onclick="add_list()">添加</a></li>
+            <li><input name="dashbord_name"/></li>
+          </ul>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        <div class="row">
+          <h1 class="page-header">{{ action }}</h1>
+          <div class="col-sm-6">
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <form id="dashbord_add_form"  role="form">
+                <div class="form-group">
+                  <lable>name</lable>
+                  <input name="name" class="form-control"/>
+                </div>
+                <div class="form-group">
+                  <lable>key</lable>
+                  <input name="key" class="form-control"/>
+                </div>
+                <div class="form-group">
+                  <lable>type</lable>
+                   <select name="type" class="form-control">
+                    <option value="plain">原样输出</option>
+                    <option value="speed">速度计</option>
+                    <option value="line">时间序列</option>
+                    <option value="table">表格(要求数据格式为json数组)</option>
+                  </select>
+                </div>
+                 <div class="form-group">
+                    <lable>desc</lable>
+                    <input name="desc" class="form-control"/>
+                  </div>
+                </form>
+                <button onclick="add()">添加</button>
+              </div>
+            </div>
+          </div>
+        </div>
+          {% for k in dashbord_collection %}
+            <div class="col-sm-4" id="{{k}}" style="height:600px;">
+              <h1>{{dashbord_collection[k]['name']}}</h1>
+              <h5>{{dashbord_collection[k]['desc']}}</h5>
+              {% if dashbord_collection[k]['type']=='plain' %}
+              <pre></pre>
+              {% end %}
+              {% if dashbord_collection[k]['type']=='table' %}
+              <div class="showtable"></div>
+              {% end %}
+              {% if dashbord_collection[k]['type']=='speed' %}
+              <div id="graph_{{k}}"></div>
+              {% end %}
+              {% if dashbord_collection[k]['type']=='line' %}
+              <div id="graph_{{k}}"></div>
+              {% end %}
+            </div>
+          {% end %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="/web/js/jquery-1.11.1.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/web/js/bootstrap.min.js"></script>
+    <script src="/web/js/highcharts.js"></script>
+    <script src="/web/js/highcharts-more.js"></script>
+    <script >
+    function listen(key,type){
+      var host = window.location.host
+      var connected = true
+      var ws = new WebSocket("ws://"+host+"/redis?key="+key);
+      var now_value
+      this.id="obj_"+key;
+      eval(this.id+"=this");
+      ws.onopen = function() {
+       ws.send("get_data");
+      };
+      ws.onmessage = function (evt) {
+         // document.getElementById('log').innerHtml = evt.data
+       // $('#log').append(evt.data)
+       // console.log(evt.data)
+       if (type=='plain') {
+        $("#"+key+" pre").empty().append(evt.data)
+       }else if(type=='table'){
+        d = jQuery.parseJSON(evt.data);
+        $("#"+key+" .showtable").empty().append(draw_table(d))
+       }else if(type=='speed'){
+        now_value = parseInt(evt.data)
+       }else if(type=='line'){
+        now_value = parseInt(evt.data)
+       }
+
+       
+      };
+      ws.onerror = function(d){
+          console.log(d.data)
+          connected = false
+      }
+      ws.onclose = function(){
+        connected = false
+      }
+
+      this.flush = function()
+      {
+          if (connected) {
+            ws.send("get_data");
+          }
+      }
+      if(type=='speed'){
+        $('#graph_'+key).highcharts({
+    
+        chart: {
+            type: 'gauge',
+            plotBackgroundColor: null,
+            plotBackgroundImage: null,
+            plotBorderWidth: 0,
+            plotShadow: false,
+            width:300
+        },
+        
+        title: {
+            text: key
+        },
+        
+        pane: {
+            startAngle: -150,
+            endAngle: 150,
+            background: [{
+                backgroundColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    stops: [
+                        [0, '#FFF'],
+                        [1, '#333']
+                    ]
+                },
+                borderWidth: 0,
+                outerRadius: '109%'
+            }, {
+                backgroundColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    stops: [
+                        [0, '#333'],
+                        [1, '#FFF']
+                    ]
+                },
+                borderWidth: 1,
+                outerRadius: '107%'
+            }, {
+                // default background
+            }, {
+                backgroundColor: '#DDD',
+                borderWidth: 0,
+                outerRadius: '105%',
+                innerRadius: '103%'
+            }]
+        },
+           
+        // the value axis
+        yAxis: {
+            min: 0,
+            max: 2000,
+            
+            minorTickInterval: 'auto',
+            minorTickWidth: 1,
+            minorTickLength: 10,
+            minorTickPosition: 'inside',
+            minorTickColor: '#666',
+    
+            tickPixelInterval: 30,
+            tickWidth: 2,
+            tickPosition: 'inside',
+            tickLength: 10,
+            tickColor: '#666',
+            labels: {
+                step: 2,
+                rotation: 'auto'
+            },
+            title: {
+                text: 'msg/s'
+            },
+            plotBands: [{
+                from: 0,
+                to: 600,
+                color: '#55BF3B' // green
+            }, {
+                from: 600,
+                to: 1500,
+                color: '#DDDF0D' // yellow
+            }, {
+                from: 1500,
+                to: 2000,
+                color: '#DF5353' // red
+            }]        
+        },
+    
+        series: [{
+            name: 'Speed',
+            data: [0],
+            tooltip: {
+                valueSuffix: ' msg/minute'
+            }
+        }]
+    
+    }, 
+    // Add some life
+    function (chart) {
+        if (!chart.renderer.forExport) {
+            setInterval(function () {
+                var point = chart.series[0].points[0]
+                //     newVal,
+                //     inc = Math.round((now_value - 0.5) * 20);
+                
+                // newVal = point.y + inc;
+                // if (newVal < 0 || newVal > 200) {
+                //     newVal = point.y - inc;
+                // }
+                
+                point.update(now_value);
+                
+            }, 2000);
+        }
+    });
+      }
+      else if(type=="line"){
+        console.log('#graph_'+key)
+        var chart;
+        $('#graph_'+key).highcharts({                                                
+            chart: {                                                                
+                type: 'spline',                                                     
+                animation: Highcharts.svg, // don't animate in old IE               
+                marginRight: 10,                                                    
+                events: {                                                           
+                    load: function() {                                              
+                        // set up the updating of the chart each second             
+                        var series = this.series[0];                                
+                        setInterval(function() {                                    
+                            var x = (new Date()).getTime(), // current time         
+                                y = now_value;
+                                console.log(now_value)
+                            series.addPoint([x, y], true, true);                    
+                        }, 2000);                                                   
+                    }                                                               
+                }                                                                   
+            },                                                                      
+            title: {                                                                
+                text: key                                        
+            },                                                                      
+            xAxis: {                                                                
+                type: 'datetime',                                                   
+                tickPixelInterval: 150                                              
+            },                                                                      
+            yAxis: {                                                                
+                title: {                                                            
+                    text: 'Value'                                                   
+                },                                                                  
+                plotLines: [{                                                       
+                    value: 0,                                                       
+                    width: 1,                                                       
+                    color: '#019000'                                                
+                }]                                                                  
+            },                                                                      
+            tooltip: {                                                              
+                formatter: function() {                                             
+                        return '<b>'+ this.series.name +'</b><br>'+                
+                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) +'<br>'+
+                        Highcharts.numberFormat(this.y, 2);                         
+                }                                                                   
+            },                                                                      
+            legend: {                                                               
+                enabled: false                                                      
+            },                                                                      
+            exporting: {                                                            
+                enabled: false                                                      
+            },                                                                      
+            series: [{                                                              
+                name: key,                                                
+                data: (function() {                                                 
+                    // generate an array of random data                             
+                    var data = [],                                                  
+                        time = (new Date()).getTime(),                              
+                        i;                                                          
+                                                                                    
+                    for (i = -19; i <= 0; i++) {                                    
+                        data.push({                                                 
+                            x: time + i * 1000,                                     
+                            y: 0                                        
+                        });                                                         
+                    }                                                               
+                    return data;                                                    
+                })()                                                                
+            }]                                                                      
+        }); 
+      }
+
+      // setInterval(key+".flush()",2000)
+
+    }
+    {% for k in dashbord_collection %}
+       var {{dashbord_collection[k]['key']}} = new listen("{{dashbord_collection[k]['key']}}","{{dashbord_collection[k]['type']}}")
+       setInterval("{{dashbord_collection[k]['key']}}.flush()",2000)
+    {% end %}
+//     var host = window.location.host
+//     var ws = new WebSocket("ws://"+host+"/ws?key={{ action }}");
+//     var connected = true
+// ws.onopen = function() {
+//    ws.send("get_data");
+// };
+// ws.onmessage = function (evt) {
+//    // document.getElementById('log').innerHtml = evt.data
+//    $('#log').append(evt.data)
+// };
+// ws.onerror = function(d){
+//     console.log(d.data)
+//     connected = false
+// }
+// ws.onclose = function(){
+//   connected = false
+// }
+// function flush(){
+//   if (connected) {
+//     ws.send("get_data");
+//   }
+// }
+// function clean_log(){
+//     ws.send("clean_log");
+//     $('#log').empty()
+// }
+// setInterval("flush()",1000)
+
+function draw_table(d){
+  table = "<table>"
+  th = "<thead><tr>"
+  write_head = true
+  for (var r in d) {
+    row = "<tr>"
+    for(var k in d[r]){
+      if (write_head) {
+        th+="<th>"+k+"</th>"
+      }
+      row+="<td>"+d[r][k]+"</td>"
+    }
+    if (write_head) {
+      th+="</tr></thead>"
+      write_head = false
+      table+=th
+    }
+    row+="</tr>"
+    table+=row
+  };
+  return table
+  // for (var i = d.length - 1; i >= 0; i--) {
+  //     row = "<tr><td>"+d[i].ip+"</td>"+
+  //     "<td>"+d[i].port+"</td>"+
+  //     "<td>"+d[i].pid+"</td>"+
+  //     "<td>"+d[i].pname+"</td></tr>"
+  //     table+=row
+  // };
+  // table+="</table>"
+  // return table
+}
+
+
+function add(){
+  
+  $.post('/dashbord/{{ key }}', $('#dashbord_add_form').serialize() , function(data, textStatus, xhr) {
+    console.log(data)
+  });
+}
+
+function add_list(){
+  var dashbord_name =  $(':input[name="dashbord_name"]').val()
+  $.post('/dashbordList', {"dashbord_name":dashbord_name} , function(data, textStatus, xhr) {
+    console.log(data)
+  });
+}
+</script>
+  </body>
+</html>

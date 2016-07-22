@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+    <title></title>
+</head>
+<body>
+<div id="content">
+  <div id="menu"></div>
+  <div id="showbox"></div>
+</div>
+</body>
+</html>
+<script type="text/javascript" src="/static/js/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="/static/js/template.js"></script>
+
+<script id="log_list" type="text/html">
+<ul>
+    {{each data as value i}}
+        <li f="{{value}}" >{{value}}</li>
+    {{/each}}
+</ul>
+</script>
+
+<script type="text/javascript">
+    // var ws = new WebSocket("ws://101.200.200.207:9008/logs");
+    // ws.onopen = function() {
+    //    ws.send("ls");
+    // };
+    // ws.onmessage = function (evt) {
+    //    // alert(evt.data);
+    //    console.log(evt.data)
+    //    d = jQuery.parseJSON(evt.data)
+    //    $('#content').append(d.content)
+
+    // };
+
+    var intervalId;
+
+    $.get('logs/log_list',{},function(d){
+      var html = template('log_list', d);
+      $('#menu').html(html)
+    },'json')
+
+    $('#menu').on('click','li',function(){
+      f = $(this).attr('f')
+      $.get('logs/log_init?f='+f,{},function(d){
+        $('#showbox').empty()
+        for (var i = 0; i < d.data.length; i++) {
+          $('#showbox').append(d.data[i]+"</br>")
+        }
+        var ws = new WebSocket("ws://101.200.200.207:9008/logws");
+        ws.onopen = function() {
+           ws.send(f);
+        };
+        ws.onmessage = function (evt) {
+        dat = jQuery.parseJSON(evt.data)
+          for (var i = 0; i < dat.data.length; i++) {
+           $('#showbox').append(dat.data[i]+"</br>")
+          }
+        };
+        clearInterval(intervalId);
+        intervalId = setInterval(ws.onopen,1000)
+
+      },'json')
+    })
+
+</script>

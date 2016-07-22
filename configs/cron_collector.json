@@ -1,0 +1,44 @@
+[
+    {
+        "cmd":"netstat -atln",
+        "time":"0 */10 * * * *",
+        "enable":true,
+        "analyzer":"service"
+    },
+    {
+        "cmd":"curl http://admin.510wifi.com/independent/everyday/index 2>/dev/null",
+        "time":"0 30 9 * * *",
+        "enable":true,
+        "analyzer":"mail_report",
+        "param":{
+            "to":["luyucia@163.com","mingze.li@calli-media.com","wanfu.li@calli-media.com","yao.zhou@calli-media.com"]
+        }
+    },
+    {
+        "cmd":"php /home/luyu/code/wifi_server/shell/php_jobs/activeIndexReq.php",
+        "time":"0 */5 * * * *",
+        "enable":true,
+        "analyzer":"empty"
+    },
+    {
+        "cmd":"curl http://admin.510wifi.com/independent/everyday/rewardReqCheck 2>/dev/null",
+        "time":"0 0 8-21/1 * * *",
+        "enable":true,
+        "analyzer":"mail_report",
+        "param":{
+            "title":"发货提醒",
+            "to":["luyucia@163.com","mingze.li@calli-media.com","wanfu.li@calli-media.com","yao.zhou@calli-media.com"]
+        }
+    },
+    {
+        "cmd":"curl http://admin.510wifi.com/independent/everyday/pvuv 2>/dev/null",
+        "time":"0 0 0 * * *",
+        "enable":true,
+        "analyzer":"mail_report",
+        "param":{
+            "title":"昨日访问统计",
+            "to":["luyucia@163.com","mingze.li@calli-media.com","wanfu.li@calli-media.com","yao.zhou@calli-media.com"]
+        }
+    }
+
+]

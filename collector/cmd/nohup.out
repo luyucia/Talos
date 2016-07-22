@@ -1,0 +1,5 @@
+No handlers could be found for logger "apscheduler.executors.default"
+No handlers could be found for logger "apscheduler.executors.default"
+No handlers could be found for logger "apscheduler.executors.default"
+PHP Warning:  mysqli_connect(): (HY000/2002): Connection timed out in /home/wwwroot/CatPHP/catphp/bricks/db/mysql.php on line 32
+No handlers could be found for logger "apscheduler.executors.default"
